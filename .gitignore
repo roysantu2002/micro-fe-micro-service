@@ -1,0 +1,32 @@
+# Environment
+.env
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+
+# Java / Maven
+target/
+*.jar
+*.class
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
