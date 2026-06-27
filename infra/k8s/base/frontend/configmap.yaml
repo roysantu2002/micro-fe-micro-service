@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: yt-planner
+data:
+  # For learning: use the Ingress external IP (replace after deploying ingress controller)
+  # Example: http://20.x.x.x or just leave empty to use relative URLs
+  NEXT_PUBLIC_API_URL: ""
+  # MFE URLs for server-side rendering (internal cluster DNS)
+  NEXT_PUBLIC_TOPIC_MANAGER_URL: "http://topic-manager-mfe-svc:3001"
+  NEXT_PUBLIC_CONTENT_WRITER_URL: "http://content-writer-mfe-svc:3002"

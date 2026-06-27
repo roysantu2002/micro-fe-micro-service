@@ -1,0 +1,71 @@
+# infra/k8s/base/content-service/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: content-service
+  namespace: yt-planner
+  labels:
+    app: content-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: content-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: content-service
+        tier: backend
+    spec:
+      containers:
+        - name: content-service
+          image: ytplanneracr.azurecr.io/content-service:v1
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: content-service-config
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key
+                  key: OPENAI_API_KEY
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+# infra/k8s/base/content-service/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: content-service-svc
+  namespace: yt-planner
+spec:
+  selector:
+    app: content-service
+  ports:
+    - port: 8082
+      targetPort: 8082

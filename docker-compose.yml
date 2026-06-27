@@ -148,6 +148,51 @@ services:
     networks:
       - yt-planner-network
 
+  # ============================================
+  # Frontend Services (Micro-Frontends)
+  # ============================================
+
+  topic-manager-mfe:
+    build:
+      context: ./frontend/topic-manager-mfe
+      dockerfile: Dockerfile
+    container_name: yt-planner-topic-manager
+    ports:
+      - "3011:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://nginx
+    networks:
+      - yt-planner-network
+
+  content-writer-mfe:
+    build:
+      context: ./frontend/content-writer-mfe
+      dockerfile: Dockerfile
+    container_name: yt-planner-content-writer
+    ports:
+      - "3002:3002"
+    environment:
+      NEXT_PUBLIC_API_URL: http://nginx
+    networks:
+      - yt-planner-network
+
+  shell-app:
+    build:
+      context: ./frontend/shell-app
+      dockerfile: Dockerfile
+    container_name: yt-planner-shell-app
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://nginx
+      NEXT_PUBLIC_TOPIC_MANAGER_URL: http://topic-manager-mfe:3001
+      NEXT_PUBLIC_CONTENT_WRITER_URL: http://content-writer-mfe:3002
+    depends_on:
+      - topic-manager-mfe
+      - content-writer-mfe
+    networks:
+      - yt-planner-network
+
 volumes:
   postgres-data:
   redis-data:

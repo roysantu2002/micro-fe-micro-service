@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: content-service-config
+  namespace: yt-planner
+data:
+  OPENAI_MODEL: "gpt-4o-mini"
+  REDIS_HOST: "redis-svc"
+  REDIS_PORT: "6379"
+  REDIS_TTL: "86400"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-svc:9092"
+  KAFKA_CONSUMER_GROUP: "content-service"
+  KAFKA_TOPIC_CONSUME: "topic-created"
+  KAFKA_TOPIC_PRODUCE: "content-generated"

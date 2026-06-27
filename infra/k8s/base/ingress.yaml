@@ -1,0 +1,62 @@
+# infra/k8s/base/ingress.yaml
+# For learning: no host specified, so this works with any IP/domain
+# Access via the Ingress Controller's external LoadBalancer IP
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yt-planner-ingress
+  namespace: yt-planner
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    # Enable CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # Backend API - Topics (more specific paths first)
+          - path: /api/topics
+            pathType: Prefix
+            backend:
+              service:
+                name: topic-service-svc
+                port:
+                  number: 8081
+          # Backend API - Content
+          - path: /api/content
+            pathType: Prefix
+            backend:
+              service:
+                name: content-service-svc
+                port:
+                  number: 8082
+          # Topic Manager MFE assets
+          - path: /topic-manager
+            pathType: Prefix
+            backend:
+              service:
+                name: topic-manager-mfe-svc
+                port:
+                  number: 3001
+          # Content Writer MFE assets
+          - path: /content-writer
+            pathType: Prefix
+            backend:
+              service:
+                name: content-writer-mfe-svc
+                port:
+                  number: 3002
+          # Frontend - Shell App (catch-all, must be last)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shell-app-svc
+                port:
+                  number: 3000

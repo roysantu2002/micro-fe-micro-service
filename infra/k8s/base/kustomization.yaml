@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: yt-planner
+
+resources:
+  # Namespace
+  - namespace.yaml
+
+  # Network policies
+  - network-policy.yaml
+
+  # Secrets (for learning - uses inline secrets, not Key Vault)
+  - secrets/secrets.yaml
+
+  # Infrastructure - PostgreSQL
+  - postgres/statefulset.yaml
+
+  # Infrastructure - Redis
+  - redis/statefulset.yaml
+
+  # Infrastructure - Zookeeper & Kafka
+  - kafka/zookeeper-statefulset.yaml
+  - kafka/kafka-statefulset.yaml
+
+  # Backend - Topic Service
+  - topic-service/configmap.yaml
+  - topic-service/deployment.yaml
+
+  # Backend - Content Service
+  - content-service/configmap.yaml
+  - content-service/deployment.yaml
+
+  # Frontend - ConfigMap (shared)
+  - frontend/configmap.yaml
+
+  # Frontend - Shell App (host)
+  - shell-app/deployment.yaml
+
+  # Frontend - Topic Manager MFE
+  - topic-manager-mfe/deployment.yaml
+
+  # Frontend - Content Writer MFE
+  - content-writer-mfe/deployment.yaml
+
+  # Ingress
+  - ingress.yaml

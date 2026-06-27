@@ -1,0 +1,89 @@
+# infra/k8s/base/topic-service/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: topic-service
+  namespace: yt-planner
+  labels:
+    app: topic-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: topic-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: topic-service
+        tier: backend
+    spec:
+      containers:
+        - name: topic-service
+          image: ytplanneracr.azurecr.io/topic-service:v1
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: topic-service-config
+          env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: SPRING_DATASOURCE_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: SPRING_DATASOURCE_PASSWORD
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+---
+# infra/k8s/base/topic-service/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: topic-service-svc
+  namespace: yt-planner
+spec:
+  selector:
+    app: topic-service
+  ports:
+    - port: 8081
+      targetPort: 8081

@@ -1,0 +1,57 @@
+# infra/k8s/base/content-writer-mfe/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: content-writer-mfe
+  namespace: yt-planner
+  labels:
+    app: content-writer-mfe
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: content-writer-mfe
+  template:
+    metadata:
+      labels:
+        app: content-writer-mfe
+        tier: frontend
+    spec:
+      containers:
+        - name: content-writer-mfe
+          image: ytplanneracr.azurecr.io/content-writer-mfe:v1
+          ports:
+            - containerPort: 3002
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3002
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+# infra/k8s/base/content-writer-mfe/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: content-writer-mfe-svc
+  namespace: yt-planner
+spec:
+  selector:
+    app: content-writer-mfe
+  ports:
+    - port: 3002
+      targetPort: 3002

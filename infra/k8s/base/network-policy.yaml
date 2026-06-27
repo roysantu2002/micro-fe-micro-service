@@ -1,0 +1,50 @@
+# infra/k8s/base/network-policy.yaml
+#
+# For learning: allow all traffic within the yt-planner namespace
+# and allow ingress from the ingress-nginx namespace.
+#
+# In production, replace this with fine-grained per-service policies.
+# ============================================================================
+
+# Allow all pods in the namespace to communicate with each other
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-namespace
+  namespace: yt-planner
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from within the namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: yt-planner
+    # Allow traffic from the ingress-nginx namespace (ingress controller)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+  egress:
+    # Allow DNS resolution (kube-system)
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow traffic within the namespace
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: yt-planner
+    # Allow external HTTPS (for OpenAI API calls from content-service)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP

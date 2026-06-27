@@ -1,0 +1,60 @@
+# infra/k8s/base/shell-app/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shell-app
+  namespace: yt-planner
+  labels:
+    app: shell-app
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shell-app
+  template:
+    metadata:
+      labels:
+        app: shell-app
+        tier: frontend
+    spec:
+      containers:
+        - name: shell-app
+          image: ytplanneracr.azurecr.io/shell-app:v1
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: frontend-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+# infra/k8s/base/shell-app/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: shell-app-svc
+  namespace: yt-planner
+spec:
+  selector:
+    app: shell-app
+  ports:
+    - port: 3000
+      targetPort: 3000
