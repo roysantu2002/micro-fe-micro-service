@@ -48,6 +48,7 @@ locals {
     managed_by  = "terraform"
   }
 
-  # ACR login server is referenced directly from azurerm_container_registry.acr.login_server
-  # Image prefix: <acr_name>.azurecr.io/micro-fe-micro-service
+  # Images live in GitHub Container Registry (free, no Azure registry needed)
+  # Packages must be set to Public after first push — then no credentials needed
+  ghcr_image_prefix = "ghcr.io/santuroy/micro-fe-micro-service"
 }

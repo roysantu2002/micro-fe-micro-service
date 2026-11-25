@@ -1,4 +1,4 @@
-# ── Log Analytics Workspace (required for Container Apps Environment) ─────────
+# ── Log Analytics Workspace ───────────────────────────────────────────────────
 resource "azurerm_log_analytics_workspace" "logs" {
   name                = "log-yt-planner"
   location            = azurerm_resource_group.rg.location
@@ -8,7 +8,7 @@ resource "azurerm_log_analytics_workspace" "logs" {
   tags                = local.common_tags
 }
 
-# ── Container Apps Environment (shared by all 3 MFE apps) ────────────────────
+# ── Container Apps Environment ────────────────────────────────────────────────
 resource "azurerm_container_app_environment" "cae" {
   name                       = "cae-yt-planner"
   location                   = azurerm_resource_group.rg.location
@@ -26,10 +26,9 @@ resource "azurerm_container_app_environment" "cae" {
   tags = local.common_tags
 }
 
-# ── topic-manager-mfe — INTERNAL (not publicly accessible) ───────────────────
-# The host-app nginx reverse-proxies /mfe/topic-manager/* to this app.
-# Browser never reaches this directly — host-app resolves it via Container Apps internal DNS.
-# ACR pull uses the Managed Identity — no PAT, no password.
+# ── topic-manager-mfe — INTERNAL ─────────────────────────────────────────────
+# No registry block needed — GHCR packages are public, no credentials required.
+# host-app nginx proxies /mfe/topic-manager/* to this app via internal DNS.
 resource "azurerm_container_app" "topic_manager_mfe" {
   name                         = "topic-manager-mfe"
   container_app_environment_id = azurerm_container_app_environment.cae.id
@@ -39,12 +38,6 @@ resource "azurerm_container_app" "topic_manager_mfe" {
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.mfe_identity.id]
-  }
-
-  # ACR pull via Managed Identity — identity_resource_id links the identity that has AcrPull
-  registry {
-    server   = azurerm_container_registry.acr.login_server
-    identity = azurerm_user_assigned_identity.mfe_identity.id
   }
 
   ingress {
@@ -63,7 +56,7 @@ resource "azurerm_container_app" "topic_manager_mfe" {
 
     container {
       name   = "topic-manager-mfe"
-      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"  # placeholder
+      image  = "${local.ghcr_image_prefix}/topic-manager-mfe:latest"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -103,11 +96,6 @@ resource "azurerm_container_app" "content_writer_mfe" {
     identity_ids = [azurerm_user_assigned_identity.mfe_identity.id]
   }
 
-  registry {
-    server   = azurerm_container_registry.acr.login_server
-    identity = azurerm_user_assigned_identity.mfe_identity.id
-  }
-
   ingress {
     external_enabled = false
     target_port      = 80
@@ -124,7 +112,7 @@ resource "azurerm_container_app" "content_writer_mfe" {
 
     container {
       name   = "content-writer-mfe"
-      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      image  = "${local.ghcr_image_prefix}/content-writer-mfe:latest"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -164,16 +152,10 @@ resource "azurerm_container_app" "host_app" {
     identity_ids = [azurerm_user_assigned_identity.mfe_identity.id]
   }
 
-  registry {
-    server   = azurerm_container_registry.acr.login_server
-    identity = azurerm_user_assigned_identity.mfe_identity.id
-  }
-
   ingress {
-    external_enabled = true        # Public HTTPS — this URL goes in your browser
+    external_enabled = true
     target_port      = 80
     transport        = "http"
-
     traffic_weight {
       latest_revision = true
       percentage      = 100
@@ -186,7 +168,7 @@ resource "azurerm_container_app" "host_app" {
 
     container {
       name   = "host-app"
-      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      image  = "${local.ghcr_image_prefix}/host-app:latest"
       cpu    = 0.5
       memory = "1Gi"
 

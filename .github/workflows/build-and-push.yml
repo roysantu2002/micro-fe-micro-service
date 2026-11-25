@@ -1,10 +1,9 @@
 name: Build, Push & Deploy MFE
 
-# ── How auth works (no passwords stored in GitHub) ────────────────────────────
-# GitHub Actions gets a short-lived OIDC token from GitHub itself.
-# Azure trusts that token because of the Federated Identity Credential in oidc.tf.
-# GitHub Actions then gets a short-lived Azure access token — no JSON secrets.
-# Azure Container Apps pull from ACR using Managed Identity — no PAT needed.
+# ── Auth summary ──────────────────────────────────────────────────────────────
+# Push to GHCR:   uses GITHUB_TOKEN (auto-provided by GitHub, no setup needed)
+# Deploy to Azure: uses OIDC (3 plain vars in GitHub, no secrets/passwords)
+# Pull from GHCR:  packages are set to Public — Container Apps need no credentials
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -15,48 +14,33 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write    # Required for OIDC — lets GitHub issue the identity token
+  id-token: write   # Required for OIDC login to Azure
   contents: read
-  packages: read
+  packages: write   # Required to push images to GHCR
 
 env:
-  # These 3 are plain variables (not secrets) — set them in repo Settings → Variables
-  AZURE_CLIENT_ID:       ${{ vars.AZURE_CLIENT_ID }}       # App Registration client ID from oidc.tf output
-  AZURE_TENANT_ID:       ${{ vars.AZURE_TENANT_ID }}       # Tenant ID from oidc.tf output
-  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }} # ac91a2b4-4d65-4c8d-9e4f-db410eef92a0
-  ACR_LOGIN_SERVER:      ${{ vars.ACR_LOGIN_SERVER }}       # ytplanneracr.azurecr.io (from terraform output)
-  RESOURCE_GROUP:        rg-yt-planner
+  GHCR_REGISTRY:   ghcr.io
+  IMAGE_PREFIX:    ghcr.io/santuroy/micro-fe-micro-service
+  RESOURCE_GROUP:  rg-yt-planner
 
 jobs:
   # ── Build & push topic-manager-mfe ──────────────────────────────────────────
   build-topic-manager:
     name: Build topic-manager-mfe
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.image.outputs.name }}
 
     steps:
       - uses: actions/checkout@v4
 
-      # OIDC login — no password, no service principal JSON
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
+      # GITHUB_TOKEN is automatically available — no setup, no expiry, scoped to this repo
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          client-id:       ${{ env.AZURE_CLIENT_ID }}
-          tenant-id:       ${{ env.AZURE_TENANT_ID }}
-          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to ACR
-        run: az acr login --name ytplanneracr
-
-      - name: Set image name
-        id: image
-        run: |
-          TAG=${{ env.ACR_LOGIN_SERVER }}/topic-manager-mfe:sha-${{ github.sha }}
-          echo "name=$TAG" >> $GITHUB_OUTPUT
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -65,8 +49,8 @@ jobs:
           file: ./frontend/topic-manager-mfe/Containerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ steps.image.outputs.name }}
-            ${{ env.ACR_LOGIN_SERVER }}/topic-manager-mfe:latest
+            ${{ env.IMAGE_PREFIX }}/topic-manager-mfe:sha-${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}/topic-manager-mfe:latest
           build-args: |
             PUBLIC_API_URL=${{ vars.PUBLIC_API_URL || 'http://nginx-gateway' }}
           cache-from: type=gha
@@ -76,38 +60,28 @@ jobs:
   build-content-writer:
     name: Build content-writer-mfe
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.image.outputs.name }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          client-id:       ${{ env.AZURE_CLIENT_ID }}
-          tenant-id:       ${{ env.AZURE_TENANT_ID }}
-          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Log in to ACR
-        run: az acr login --name ytplanneracr
-
-      - name: Set image name
-        id: image
-        run: |
-          TAG=${{ env.ACR_LOGIN_SERVER }}/content-writer-mfe:sha-${{ github.sha }}
-          echo "name=$TAG" >> $GITHUB_OUTPUT
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/setup-buildx-action@v3
 
-      - uses: docker/build-push-action@v5
+      - name: Build and push
+        uses: docker/build-push-action@v5
         with:
           context: ./frontend/content-writer-mfe
           file: ./frontend/content-writer-mfe/Containerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ steps.image.outputs.name }}
-            ${{ env.ACR_LOGIN_SERVER }}/content-writer-mfe:latest
+            ${{ env.IMAGE_PREFIX }}/content-writer-mfe:sha-${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}/content-writer-mfe:latest
           build-args: |
             PUBLIC_API_URL=${{ vars.PUBLIC_API_URL || 'http://nginx-gateway' }}
           cache-from: type=gha
@@ -118,38 +92,28 @@ jobs:
     name: Build host-app
     runs-on: ubuntu-latest
     needs: [build-topic-manager, build-content-writer]
-    outputs:
-      image: ${{ steps.image.outputs.name }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          client-id:       ${{ env.AZURE_CLIENT_ID }}
-          tenant-id:       ${{ env.AZURE_TENANT_ID }}
-          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Log in to ACR
-        run: az acr login --name ytplanneracr
-
-      - name: Set image name
-        id: image
-        run: |
-          TAG=${{ env.ACR_LOGIN_SERVER }}/host-app:sha-${{ github.sha }}
-          echo "name=$TAG" >> $GITHUB_OUTPUT
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/setup-buildx-action@v3
 
-      - uses: docker/build-push-action@v5
+      - name: Build and push
+        uses: docker/build-push-action@v5
         with:
           context: ./frontend/host-app
           file: ./frontend/host-app/Containerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ steps.image.outputs.name }}
-            ${{ env.ACR_LOGIN_SERVER }}/host-app:latest
+            ${{ env.IMAGE_PREFIX }}/host-app:sha-${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}/host-app:latest
           build-args: |
             PUBLIC_TOPIC_MANAGER_REMOTE=/mfe/topic-manager/mf-manifest.json
             PUBLIC_CONTENT_WRITER_REMOTE=/mfe/content-writer/mf-manifest.json
@@ -167,38 +131,39 @@ jobs:
     environment: production
 
     steps:
-      - name: Azure Login (OIDC)
+      # OIDC login — no AZURE_CREDENTIALS secret, just 3 plain variable IDs
+      - name: Azure Login (OIDC — no password)
         uses: azure/login@v2
         with:
-          client-id:       ${{ env.AZURE_CLIENT_ID }}
-          tenant-id:       ${{ env.AZURE_TENANT_ID }}
-          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          client-id:       ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id:       ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy topic-manager-mfe
         run: |
           az containerapp update \
             --name topic-manager-mfe \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/topic-manager-mfe:sha-${{ github.sha }}
+            --image ${{ env.IMAGE_PREFIX }}/topic-manager-mfe:sha-${{ github.sha }}
 
       - name: Deploy content-writer-mfe
         run: |
           az containerapp update \
             --name content-writer-mfe \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/content-writer-mfe:sha-${{ github.sha }}
+            --image ${{ env.IMAGE_PREFIX }}/content-writer-mfe:sha-${{ github.sha }}
 
       - name: Deploy host-app
         run: |
           az containerapp update \
             --name host-app \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/host-app:sha-${{ github.sha }}
+            --image ${{ env.IMAGE_PREFIX }}/host-app:sha-${{ github.sha }}
 
-      - name: Print app URL
+      - name: Print live URL
         run: |
           URL=$(az containerapp show \
             --name host-app \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --query properties.configuration.ingress.fqdn -o tsv)
-          echo "✅ App live at: https://$URL"
+          echo "App live at: https://$URL"

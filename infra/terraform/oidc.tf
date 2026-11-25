@@ -1,21 +1,27 @@
 # ── OIDC / Workload Identity Federation ──────────────────────────────────────
 #
-# This file sets up the trust between GitHub Actions and Azure using OIDC.
-# How it works:
-#   1. Azure creates an App Registration for GitHub Actions CI/CD
-#   2. A Federated Credential is added — it says "trust tokens issued by GitHub
-#      for the repo santuroy/micro-fe-micro-service on branch main"
-#   3. GitHub Actions requests a short-lived OIDC token from GitHub itself
-#   4. It presents that token to Azure AD — Azure trusts it because of the
-#      Federated Credential and issues a short-lived Azure access token
-#   5. GitHub Actions uses that Azure token to push to ACR and deploy Container Apps
+# How it works (zero long-lived secrets):
 #
-# Result: NO passwords, NO long-lived secrets, NO AZURE_CREDENTIALS JSON.
-# You only store 3 plain IDs (not secrets) in GitHub repository variables.
+#   1. This file creates an Azure App Registration for GitHub Actions CI/CD.
+#   2. A Federated Identity Credential is attached — it tells Azure:
+#      "Trust OIDC tokens issued by GitHub for repo santuroy/micro-fe-micro-service"
+#   3. When GitHub Actions runs, it requests a short-lived OIDC token from GitHub.
+#   4. It sends that token to Azure AD → Azure verifies the Federated Credential
+#      and issues a short-lived (5-min) Azure access token.
+#   5. GitHub Actions uses that token to deploy Container Apps.
+#
+# Images live in GHCR (not ACR) — GitHub Actions pushes with the automatic
+# GITHUB_TOKEN, no manual PAT needed. Packages are made public so Container
+# Apps can pull without any credentials.
+#
+# What you save to GitHub (plain Variables, NOT secrets):
+#   AZURE_CLIENT_ID       → azuread_application.github_actions.client_id
+#   AZURE_TENANT_ID       → data.azuread_client_config.current.tenant_id
+#   AZURE_SUBSCRIPTION_ID → ac91a2b4-4d65-4c8d-9e4f-db410eef92a0
 
 data "azuread_client_config" "current" {}
 
-# App Registration specifically for GitHub Actions CI/CD (separate from MSAL app)
+# App Registration for GitHub Actions CI/CD (separate from the MSAL app for auth)
 resource "azuread_application" "github_actions" {
   display_name = "sp-yt-planner-github-actions"
   owners       = [data.azuread_client_config.current.object_id]
@@ -26,25 +32,31 @@ resource "azuread_service_principal" "github_actions" {
   owners    = [data.azuread_client_config.current.object_id]
 }
 
-# Federated Identity Credential — trusts GitHub Actions on the main branch
+# Federated credential for the main branch
 resource "azuread_application_federated_identity_credential" "github_main" {
   application_id = azuread_application.github_actions.id
   display_name   = "github-actions-main"
-  description    = "Trust GitHub Actions OIDC tokens for main branch deployments"
+  description    = "Trust GitHub Actions OIDC tokens for main branch"
 
-  # These values tell Azure: "accept OIDC tokens that come from..."
-  issuer  = "https://token.actions.githubusercontent.com"
-  subject = "repo:santuroy/micro-fe-micro-service:ref:refs/heads/main"
+  issuer    = "https://token.actions.githubusercontent.com"
+  subject   = "repo:santuroy/micro-fe-micro-service:ref:refs/heads/main"
   audiences = ["api://AzureADTokenExchange"]
 }
 
-# Also trust the feature branch during initial setup
+# Federated credential for the feature branch (remove after merging to main)
 resource "azuread_application_federated_identity_credential" "github_feature" {
   application_id = azuread_application.github_actions.id
   display_name   = "github-actions-feature-branch"
-  description    = "Trust GitHub Actions OIDC tokens for feature branch"
+  description    = "Trust GitHub Actions OIDC tokens for the rsbuild feature branch"
 
-  issuer  = "https://token.actions.githubusercontent.com"
-  subject = "repo:santuroy/micro-fe-micro-service:ref:refs/heads/feature/rsbuild-azure-container-apps"
+  issuer    = "https://token.actions.githubusercontent.com"
+  subject   = "repo:santuroy/micro-fe-micro-service:ref:refs/heads/feature/rsbuild-azure-container-apps"
   audiences = ["api://AzureADTokenExchange"]
+}
+
+# Allow GitHub Actions to deploy / update Container Apps in the resource group
+resource "azurerm_role_assignment" "github_actions_contributor" {
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Contributor"
+  principal_id         = azuread_service_principal.github_actions.object_id
 }

@@ -41,21 +41,23 @@ output "log_analytics_workspace_id" {
 #   terraform output -raw github_actions_tenant_id  → save as AZURE_TENANT_ID variable
 #   (subscription ID is already known: ac91a2b4-4d65-4c8d-9e4f-db410eef92a0)
 
+# ── Values to save as GitHub Actions Variables after terraform apply ───────────
+# Run:  terraform output -raw github_actions_client_id
+#       terraform output -raw github_actions_tenant_id
+# Then save those in github.com/santuroy/micro-fe-micro-service
+#   Settings → Secrets and variables → Actions → Variables tab
+
 output "github_actions_client_id" {
-  description = "Save this as AZURE_CLIENT_ID GitHub Actions VARIABLE (not secret)"
+  description = "Save as AZURE_CLIENT_ID GitHub Actions VARIABLE (not a secret — just an ID)"
   value       = azuread_application.github_actions.client_id
 }
 
 output "github_actions_tenant_id" {
-  description = "Save this as AZURE_TENANT_ID GitHub Actions VARIABLE (not secret)"
+  description = "Save as AZURE_TENANT_ID GitHub Actions VARIABLE (not a secret — just an ID)"
   value       = data.azuread_client_config.current.tenant_id
 }
 
-output "acr_login_server" {
-  description = "ACR login server — save as ACR_LOGIN_SERVER GitHub Actions VARIABLE"
-  value       = azurerm_container_registry.acr.login_server
-}
-
-output "acr_name" {
-  value = azurerm_container_registry.acr.name
+output "ghcr_image_prefix" {
+  description = "GHCR image prefix — images are stored here (packages must be public)"
+  value       = local.ghcr_image_prefix
 }
