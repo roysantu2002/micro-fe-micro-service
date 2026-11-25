@@ -32,25 +32,25 @@ resource "azuread_service_principal" "github_actions" {
   owners    = [data.azuread_client_config.current.object_id]
 }
 
-# Federated credential for the main branch
+# Federated credential for the main branch deploy (environment: production)
 resource "azuread_application_federated_identity_credential" "github_main" {
   application_id = azuread_application.github_actions.id
   display_name   = "github-actions-main"
-  description    = "Trust GitHub Actions OIDC tokens for main branch"
+  description    = "Trust GitHub Actions OIDC tokens for main branch production environment"
 
   issuer    = "https://token.actions.githubusercontent.com"
-  subject   = "repo:santuroy/micro-fe-micro-service:ref:refs/heads/main"
+  subject   = "repo:roysantu2002/micro-fe-micro-service:environment:production"
   audiences = ["api://AzureADTokenExchange"]
 }
 
-# Federated credential for the feature branch (remove after merging to main)
-resource "azuread_application_federated_identity_credential" "github_feature" {
+# Federated credential for main branch ref (non-environment deploys)
+resource "azuread_application_federated_identity_credential" "github_main_ref" {
   application_id = azuread_application.github_actions.id
-  display_name   = "github-actions-feature-branch"
-  description    = "Trust GitHub Actions OIDC tokens for the rsbuild feature branch"
+  display_name   = "github-actions-main-ref"
+  description    = "Trust GitHub Actions OIDC tokens for main branch ref"
 
   issuer    = "https://token.actions.githubusercontent.com"
-  subject   = "repo:santuroy/micro-fe-micro-service:ref:refs/heads/feature/rsbuild-azure-container-apps"
+  subject   = "repo:roysantu2002/micro-fe-micro-service:ref:refs/heads/main"
   audiences = ["api://AzureADTokenExchange"]
 }
 
