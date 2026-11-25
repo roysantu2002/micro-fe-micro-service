@@ -380,45 +380,10 @@ The SPA platform is required because MSAL handles the token exchange in the brow
 
 ---
 
-## Local Development Quick Reference
+## Key URLs
 
-### Mode 1 — Skip auth (fastest, no login screen)
-```bash
-# .env
-PUBLIC_DEV_SKIP_AUTH=true
-PUBLIC_MOCK_AUTH=false
-
-docker compose -f docker-compose.local.yml up --build
-# → http://localhost:3000  (straight to app, navbar shows "Dev Mode")
-```
-
-### Mode 2 — Mock login screen (no Azure account needed)
-```bash
-# .env
-PUBLIC_DEV_SKIP_AUTH=false
-PUBLIC_MOCK_AUTH=true
-
-docker compose -f docker-compose.local.yml up --build
-# → http://localhost:3000  shows an in-app mock login form
-# Type any name, press Enter — app loads as that user
-# No external server, no redirect, no HTTPS needed
-```
-
-### Mode 3 — Real Azure AD login
-```bash
-# 1. Add http://localhost:3000 as SPA redirect URI in Entra ID App Registration
-# 2. In .env:
-PUBLIC_DEV_SKIP_AUTH=false
-PUBLIC_MOCK_AUTH=false
-
-docker compose -f docker-compose.local.yml up --build
-# → http://localhost:3000  redirects to real Microsoft login
-```
-
-### Key URLs
 | Resource | URL |
 |---|---|
-| Local app | `http://localhost:3000` |
 | Production app | `https://host-app.mangosea-5338e7ad.eastus.azurecontainerapps.io` |
 | App Registration | Azure Portal → Entra ID → App registrations → `d53a7e1b-47d9-477d-ba37-f9f0c9ea7be9` |
 | GHCR packages | `github.com/roysantu2002 → Packages` |
