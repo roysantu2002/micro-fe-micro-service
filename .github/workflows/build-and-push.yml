@@ -115,8 +115,8 @@ jobs:
             ${{ env.IMAGE_PREFIX }}/host-app:sha-${{ github.sha }}
             ${{ env.IMAGE_PREFIX }}/host-app:latest
           build-args: |
-            PUBLIC_TOPIC_MANAGER_REMOTE=/mfe/topic-manager/mf-manifest.json
-            PUBLIC_CONTENT_WRITER_REMOTE=/mfe/content-writer/mf-manifest.json
+            PUBLIC_TOPIC_MANAGER_REMOTE=${{ vars.HOST_APP_URL }}/mfe/topic-manager/mf-manifest.json
+            PUBLIC_CONTENT_WRITER_REMOTE=${{ vars.HOST_APP_URL }}/mfe/content-writer/mf-manifest.json
             PUBLIC_ENTRA_CLIENT_ID=${{ vars.PUBLIC_ENTRA_CLIENT_ID }}
             PUBLIC_ENTRA_TENANT_ID=${{ vars.PUBLIC_ENTRA_TENANT_ID }}
           cache-from: type=gha
