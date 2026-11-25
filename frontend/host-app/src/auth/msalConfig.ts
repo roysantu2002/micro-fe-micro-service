@@ -18,6 +18,7 @@ export const msalConfig: Configuration = {
     authority,
     knownAuthorities: isMock ? ['localhost:8787'] : [],
     protocolMode: isMock ? ProtocolMode.OIDC : ProtocolMode.AAD,
+    allowHttp: isMock,
     redirectUri: typeof window !== 'undefined' ? window.location.origin : '/',
     postLogoutRedirectUri: typeof window !== 'undefined' ? window.location.origin : '/',
   },
