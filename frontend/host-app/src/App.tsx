@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
-import { useMsal } from '@azure/msal-react';
-import { AuthGuard } from './auth/AuthGuard';
+import { AuthGuard, getMockUser, clearMockUser } from './auth/AuthGuard';
 
 // Remote MFE components loaded via Module Federation
 const TopicManagerRemote = lazy(() => import('topicManager/TopicManager'));
@@ -14,24 +13,51 @@ function LoadingFallback({ name }: { name: string }) {
 }
 
 function NavBar() {
+  const skipAuth = process.env.PUBLIC_DEV_SKIP_AUTH === 'true';
+  const isMock   = process.env.PUBLIC_MOCK_AUTH === 'true';
+
+  if (skipAuth) {
+    return (
+      <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-6">
+        <span className="font-bold text-gray-900">YT Content Planner</span>
+        <Link to="/" className="text-gray-600 hover:text-blue-600 text-sm">Home</Link>
+        <Link to="/topics" className="text-gray-600 hover:text-blue-600 text-sm">Topics</Link>
+        <span className="ml-auto text-sm text-gray-500">Dev Mode</span>
+      </nav>
+    );
+  }
+
+  if (isMock) {
+    const user = getMockUser() ?? 'Mock User';
+    return (
+      <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-6">
+        <span className="font-bold text-gray-900">YT Content Planner</span>
+        <Link to="/" className="text-gray-600 hover:text-blue-600 text-sm">Home</Link>
+        <Link to="/topics" className="text-gray-600 hover:text-blue-600 text-sm">Topics</Link>
+        <span className="ml-auto text-sm text-gray-500">🧪 {user}</span>
+        <button onClick={clearMockUser} className="text-sm text-gray-500 hover:text-red-600">
+          Sign out
+        </button>
+      </nav>
+    );
+  }
+
+  // Real Azure AD — useMsal() is safe here because MsalProvider wraps the tree
+  const { useMsal } = require('@azure/msal-react');
   const { instance, accounts } = useMsal();
   const user = accounts[0]?.name ?? accounts[0]?.username ?? 'User';
-  const skipAuth = process.env.PUBLIC_DEV_SKIP_AUTH === 'true';
-
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-6">
       <span className="font-bold text-gray-900">YT Content Planner</span>
       <Link to="/" className="text-gray-600 hover:text-blue-600 text-sm">Home</Link>
       <Link to="/topics" className="text-gray-600 hover:text-blue-600 text-sm">Topics</Link>
-      <span className="ml-auto text-sm text-gray-500">{skipAuth ? 'Dev Mode' : user}</span>
-      {!skipAuth && (
-        <button
-          onClick={() => instance.logoutRedirect()}
-          className="text-sm text-gray-500 hover:text-red-600"
-        >
-          Sign out
-        </button>
-      )}
+      <span className="ml-auto text-sm text-gray-500">{user}</span>
+      <button
+        onClick={() => instance.logoutRedirect()}
+        className="text-sm text-gray-500 hover:text-red-600"
+      >
+        Sign out
+      </button>
     </nav>
   );
 }

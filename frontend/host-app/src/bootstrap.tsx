@@ -1,20 +1,35 @@
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
-import { PublicClientApplication } from '@azure/msal-browser';
-import { MsalProvider } from '@azure/msal-react';
-import { msalConfig } from './auth/msalConfig';
 import App from './App';
 import './styles/global.css';
-
-const msalInstance = new PublicClientApplication(msalConfig);
 
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root element #root not found');
 
-ReactDOM.createRoot(rootEl).render(
-  <StrictMode>
-    <MsalProvider instance={msalInstance}>
+const skipAuth = process.env.PUBLIC_DEV_SKIP_AUTH === 'true';
+const isMock  = process.env.PUBLIC_MOCK_AUTH === 'true';
+
+if (skipAuth || isMock) {
+  // No MSAL provider needed — AuthGuard handles these modes internally
+  ReactDOM.createRoot(rootEl).render(
+    <StrictMode>
       <App />
-    </MsalProvider>
-  </StrictMode>
-);
+    </StrictMode>
+  );
+} else {
+  // Real Azure AD — initialise MSAL and wrap the tree
+  Promise.all([
+    import('@azure/msal-browser'),
+    import('@azure/msal-react'),
+    import('./auth/msalConfig'),
+  ]).then(([{ PublicClientApplication }, { MsalProvider }, { msalConfig }]) => {
+    const msalInstance = new PublicClientApplication(msalConfig);
+    ReactDOM.createRoot(rootEl).render(
+      <StrictMode>
+        <MsalProvider instance={msalInstance}>
+          <App />
+        </MsalProvider>
+      </StrictMode>
+    );
+  });
+}
