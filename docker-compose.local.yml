@@ -1,16 +1,45 @@
 # ============================================================
 # Local development — rsbuild + nginx + MSAL
 #
-# Two auth modes (set in .env):
-#   PUBLIC_DEV_SKIP_AUTH=true   → bypasses Microsoft login (dev only)
-#   PUBLIC_DEV_SKIP_AUTH=false  → real MSAL auth (requires http://localhost:3000
-#                                  registered as SPA redirect URI in Entra ID)
+# Three auth modes (set in .env, then rebuild with --build):
+#
+#   Mode 1 — Skip auth (fastest, no login screen):
+#     PUBLIC_DEV_SKIP_AUTH=true
+#     PUBLIC_MOCK_AUTH=false
+#
+#   Mode 2 — Mock login screen (no Azure account needed):
+#     PUBLIC_DEV_SKIP_AUTH=false
+#     PUBLIC_MOCK_AUTH=true
+#     → runs mock-oauth2-server on :8787, enter any user/password
+#
+#   Mode 3 — Real Azure AD login:
+#     PUBLIC_DEV_SKIP_AUTH=false
+#     PUBLIC_MOCK_AUTH=false
+#     → requires http://localhost:3000 registered as SPA redirect URI in Entra ID
 #
 # Usage:
 #   docker compose -f docker-compose.local.yml up --build
 # ============================================================
 
 services:
+
+  # ── Mock OIDC server (Mode 2 only) ────────────────────────
+  # Simulates Microsoft login locally — no Azure account needed
+  # Login UI at http://localhost:8787/default/debugger
+  mock-auth:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    container_name: local-mock-auth
+    ports:
+      - "8787:8080"
+    environment:
+      SERVER_PORT: 8080
+      JSON_CONFIG: |
+        {
+          "interactiveLogin": true,
+          "httpServer": "NettyWrapper"
+        }
+    profiles:
+      - mock
 
   # ── MFE: Topic Manager ─────────────────────────────────────
   topic-manager-mfe:
@@ -47,6 +76,8 @@ services:
         PUBLIC_ENTRA_TENANT_ID: ${PUBLIC_ENTRA_TENANT_ID}
         # Set to "true" in .env to skip Microsoft login during local dev
         PUBLIC_DEV_SKIP_AUTH: ${PUBLIC_DEV_SKIP_AUTH:-false}
+        # Set to "true" in .env to use local mock-oauth2-server instead of Azure AD
+        PUBLIC_MOCK_AUTH: ${PUBLIC_MOCK_AUTH:-false}
     container_name: local-host-app
     ports:
       - "3000:80"
