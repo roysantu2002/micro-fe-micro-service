@@ -25,6 +25,7 @@ export default defineConfig({
     port: 3001,
   },
   output: {
+    assetPrefix: '/mfe/topic-manager/',
     distPath: { root: 'dist' },
   },
 });

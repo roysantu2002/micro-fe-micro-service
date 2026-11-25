@@ -1,0 +1,61 @@
+# ============================================================
+# Local development — rsbuild + nginx + MSAL
+#
+# Two auth modes (set in .env):
+#   PUBLIC_DEV_SKIP_AUTH=true   → bypasses Microsoft login (dev only)
+#   PUBLIC_DEV_SKIP_AUTH=false  → real MSAL auth (requires http://localhost:3000
+#                                  registered as SPA redirect URI in Entra ID)
+#
+# Usage:
+#   docker compose -f docker-compose.local.yml up --build
+# ============================================================
+
+services:
+
+  # ── MFE: Topic Manager ─────────────────────────────────────
+  topic-manager-mfe:
+    build:
+      context: ./frontend/topic-manager-mfe
+      dockerfile: Containerfile
+      args:
+        PUBLIC_API_URL: http://localhost:3000/api
+    container_name: local-topic-manager
+    networks:
+      - mfe-network
+
+  # ── MFE: Content Writer ────────────────────────────────────
+  content-writer-mfe:
+    build:
+      context: ./frontend/content-writer-mfe
+      dockerfile: Containerfile
+      args:
+        PUBLIC_API_URL: http://localhost:3000/api
+    container_name: local-content-writer
+    networks:
+      - mfe-network
+
+  # ── Host App (nginx proxy + MSAL shell) ────────────────────
+  host-app:
+    build:
+      context: ./frontend/host-app
+      dockerfile: Containerfile
+      args:
+        # MFE manifests are served through the host-app nginx proxy
+        PUBLIC_TOPIC_MANAGER_REMOTE: http://localhost:3000/mfe/topic-manager/mf-manifest.json
+        PUBLIC_CONTENT_WRITER_REMOTE: http://localhost:3000/mfe/content-writer/mf-manifest.json
+        PUBLIC_ENTRA_CLIENT_ID: ${PUBLIC_ENTRA_CLIENT_ID}
+        PUBLIC_ENTRA_TENANT_ID: ${PUBLIC_ENTRA_TENANT_ID}
+        # Set to "true" in .env to skip Microsoft login during local dev
+        PUBLIC_DEV_SKIP_AUTH: ${PUBLIC_DEV_SKIP_AUTH:-false}
+    container_name: local-host-app
+    ports:
+      - "3000:80"
+    depends_on:
+      - topic-manager-mfe
+      - content-writer-mfe
+    networks:
+      - mfe-network
+
+networks:
+  mfe-network:
+    driver: bridge

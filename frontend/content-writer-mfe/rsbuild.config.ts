@@ -25,6 +25,7 @@ export default defineConfig({
     port: 3002,
   },
   output: {
+    assetPrefix: '/mfe/content-writer/',
     distPath: { root: 'dist' },
   },
 });
