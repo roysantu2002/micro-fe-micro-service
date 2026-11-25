@@ -26,6 +26,15 @@ export default defineConfig({
   },
   html: {
     title: 'YouTube Content Planner',
+    tags: [
+      {
+        tag: 'script',
+        // Polyfill process for MSAL browser — runs before any module code
+        children: 'window.process=window.process||{env:{NODE_ENV:"production"},browser:true,version:""};',
+        head: true,
+        prepend: true,
+      },
+    ],
   },
   server: {
     port: 3000,
