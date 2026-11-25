@@ -1,16 +1,18 @@
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
-import { MFE_CONFIG } from './mfe-config';
+
+const topicManagerEntry = process.env.PUBLIC_TOPIC_MANAGER_REMOTE || 'http://localhost:3001/mf-manifest.json';
+const contentWriterEntry = process.env.PUBLIC_CONTENT_WRITER_REMOTE || 'http://localhost:3002/mf-manifest.json';
 
 export default defineConfig({
   plugins: [
     pluginReact(),
     pluginModuleFederation({
-      name: MFE_CONFIG.name,
+      name: 'hostApp',
       remotes: {
-        topicManager: MFE_CONFIG.remotes.topicManager.entry,
-        contentWriter: MFE_CONFIG.remotes.contentWriter.entry,
+        topicManager: `topicManager@${topicManagerEntry}`,
+        contentWriter: `contentWriter@${contentWriterEntry}`,
       },
       shared: {
         react: { singleton: true, requiredVersion: '^18.0.0' },
