@@ -27,23 +27,24 @@ resource "azurerm_container_app_environment" "cae" {
 }
 
 # ── topic-manager-mfe — INTERNAL (not publicly accessible) ───────────────────
-# The host-app nginx reverse-proxies /mfe/topic-manager/* to this app
-# Browser never reaches this directly — host-app resolves it via Container Apps internal DNS
+# The host-app nginx reverse-proxies /mfe/topic-manager/* to this app.
+# Browser never reaches this directly — host-app resolves it via Container Apps internal DNS.
+# ACR pull uses the Managed Identity — no PAT, no password.
 resource "azurerm_container_app" "topic_manager_mfe" {
   name                         = "topic-manager-mfe"
   container_app_environment_id = azurerm_container_app_environment.cae.id
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
-  registry {
-    server               = local.ghcr_registry
-    username             = var.ghcr_username
-    password_secret_name = "ghcr-pat"
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.mfe_identity.id]
   }
 
-  secret {
-    name  = "ghcr-pat"
-    value = var.ghcr_pat
+  # ACR pull via Managed Identity — identity_resource_id links the identity that has AcrPull
+  registry {
+    server   = azurerm_container_registry.acr.login_server
+    identity = azurerm_user_assigned_identity.mfe_identity.id
   }
 
   ingress {
@@ -62,7 +63,7 @@ resource "azurerm_container_app" "topic_manager_mfe" {
 
     container {
       name   = "topic-manager-mfe"
-      image  = "nginx:alpine"   # placeholder — GitHub Actions updates this after first push
+      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"  # placeholder
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -84,7 +85,6 @@ resource "azurerm_container_app" "topic_manager_mfe" {
   }
 
   lifecycle {
-    # Image managed by GitHub Actions; prevent Terraform from reverting to placeholder
     ignore_changes = [template[0].container[0].image]
   }
 
@@ -98,15 +98,14 @@ resource "azurerm_container_app" "content_writer_mfe" {
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
-  registry {
-    server               = local.ghcr_registry
-    username             = var.ghcr_username
-    password_secret_name = "ghcr-pat"
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.mfe_identity.id]
   }
 
-  secret {
-    name  = "ghcr-pat"
-    value = var.ghcr_pat
+  registry {
+    server   = azurerm_container_registry.acr.login_server
+    identity = azurerm_user_assigned_identity.mfe_identity.id
   }
 
   ingress {
@@ -125,7 +124,7 @@ resource "azurerm_container_app" "content_writer_mfe" {
 
     container {
       name   = "content-writer-mfe"
-      image  = "nginx:alpine"
+      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -166,14 +165,8 @@ resource "azurerm_container_app" "host_app" {
   }
 
   registry {
-    server               = local.ghcr_registry
-    username             = var.ghcr_username
-    password_secret_name = "ghcr-pat"
-  }
-
-  secret {
-    name  = "ghcr-pat"
-    value = var.ghcr_pat
+    server   = azurerm_container_registry.acr.login_server
+    identity = azurerm_user_assigned_identity.mfe_identity.id
   }
 
   ingress {
@@ -193,7 +186,7 @@ resource "azurerm_container_app" "host_app" {
 
     container {
       name   = "host-app"
-      image  = "nginx:alpine"
+      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       cpu    = 0.5
       memory = "1Gi"
 

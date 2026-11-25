@@ -34,3 +34,28 @@ output "resource_group_name" {
 output "log_analytics_workspace_id" {
   value = azurerm_log_analytics_workspace.logs.id
 }
+
+# ── Values to save as GitHub Actions Variables (NOT secrets) ──────────────────
+# After terraform apply, run:
+#   terraform output -raw github_actions_client_id  → save as AZURE_CLIENT_ID variable
+#   terraform output -raw github_actions_tenant_id  → save as AZURE_TENANT_ID variable
+#   (subscription ID is already known: ac91a2b4-4d65-4c8d-9e4f-db410eef92a0)
+
+output "github_actions_client_id" {
+  description = "Save this as AZURE_CLIENT_ID GitHub Actions VARIABLE (not secret)"
+  value       = azuread_application.github_actions.client_id
+}
+
+output "github_actions_tenant_id" {
+  description = "Save this as AZURE_TENANT_ID GitHub Actions VARIABLE (not secret)"
+  value       = data.azuread_client_config.current.tenant_id
+}
+
+output "acr_login_server" {
+  description = "ACR login server — save as ACR_LOGIN_SERVER GitHub Actions VARIABLE"
+  value       = azurerm_container_registry.acr.login_server
+}
+
+output "acr_name" {
+  value = azurerm_container_registry.acr.name
+}

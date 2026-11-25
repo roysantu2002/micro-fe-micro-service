@@ -22,19 +22,6 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "ghcr_username" {
-  description = "GitHub username — used by Container Apps to pull images from GHCR"
-  type        = string
-  default     = "santuroy"
-}
-
-variable "ghcr_pat" {
-  description = "GitHub PAT with read:packages scope — Container Apps pull secret for GHCR"
-  type        = string
-  sensitive   = true
-  # Set via: export TF_VAR_ghcr_pat="ghp_xxxx"
-}
-
 variable "entra_tenant_id" {
   description = "Azure Entra ID Tenant ID (run: az account show --query tenantId -o tsv)"
   type        = string
@@ -61,6 +48,6 @@ locals {
     managed_by  = "terraform"
   }
 
-  ghcr_registry = "ghcr.io"
-  image_prefix  = "ghcr.io/santuroy/micro-fe-micro-service"
+  # ACR login server is referenced directly from azurerm_container_registry.acr.login_server
+  # Image prefix: <acr_name>.azurecr.io/micro-fe-micro-service
 }
