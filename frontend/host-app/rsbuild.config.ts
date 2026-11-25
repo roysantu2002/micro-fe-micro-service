@@ -45,4 +45,9 @@ export default defineConfig({
   output: {
     distPath: { root: 'dist' },
   },
+  source: {
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+    },
+  },
 });
