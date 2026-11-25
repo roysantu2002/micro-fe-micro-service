@@ -1,16 +1,20 @@
 # ============================================================
-# Copy this file to terraform.tfvars for local runs
-# NEVER commit terraform.tfvars — it is gitignored
+# Copy this to terraform.tfvars before running terraform apply
+#   cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars is gitignored — never commit it
 # ============================================================
 
 subscription_id     = "ac91a2b4-4d65-4c8d-9e4f-db410eef92a0"
 location            = "eastus"
 resource_group_name = "rg-yt-planner"
 environment         = "dev"
-ghcr_username       = "santuroy"
 
-# Set sensitive values via environment variables — do NOT put real values here:
-#   export TF_VAR_ghcr_pat="ghp_xxxxxxxxxxxxxxxxxxxx"
-#   export TF_VAR_entra_tenant_id="$(az account show --query tenantId -o tsv)"
-#   export TF_VAR_entra_client_id="<from-azure-portal-app-registration>"
-#   export TF_VAR_openai_api_key="sk-proj-xxxx"
+# Tenant ID (from az account show)
+# entra_tenant_id = "7e626a1e-dd27-4d19-a481-834ea79cd15b"
+
+# MSAL App Registration Client ID — fill this in after completing Step 3
+# entra_client_id = "PASTE_APP_REGISTRATION_CLIENT_ID_HERE"
+
+# ── Set sensitive values as env vars instead of writing them here ─────────────
+# export TF_VAR_entra_tenant_id="7e626a1e-dd27-4d19-a481-834ea79cd15b"
+# export TF_VAR_entra_client_id="PASTE_APP_REGISTRATION_CLIENT_ID_HERE"
