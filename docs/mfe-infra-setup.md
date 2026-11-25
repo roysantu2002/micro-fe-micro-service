@@ -191,9 +191,9 @@ Images are stored in **GitHub Container Registry (GHCR)** — free for public pa
 
 | Image | Tag pattern |
 |---|---|
-| `ghcr.io/santuroy/micro-fe-micro-service/host-app` | `sha-<git-sha>`, `latest` |
-| `ghcr.io/santuroy/micro-fe-micro-service/topic-manager-mfe` | `sha-<git-sha>`, `latest` |
-| `ghcr.io/santuroy/micro-fe-micro-service/content-writer-mfe` | `sha-<git-sha>`, `latest` |
+| `ghcr.io/roysantu2002/micro-fe-micro-service/host-app` | `sha-<git-sha>`, `latest` |
+| `ghcr.io/roysantu2002/micro-fe-micro-service/topic-manager-mfe` | `sha-<git-sha>`, `latest` |
+| `ghcr.io/roysantu2002/micro-fe-micro-service/content-writer-mfe` | `sha-<git-sha>`, `latest` |
 
 ### Containerfile (multi-stage)
 
@@ -419,7 +419,7 @@ Subscription ID           : ac91a2b4-4d65-4c8d-9e4f-db410eef92a0
 Tenant ID                 : 7e626a1e-dd27-4d19-a481-834ea79cd15b
 Resource Group            : rg-yt-planner
 Location                  : eastus
-GHCR prefix               : ghcr.io/santuroy/micro-fe-micro-service
+GHCR prefix               : ghcr.io/roysantu2002/micro-fe-micro-service
 GitHub repo               : github.com/roysantu2002/micro-fe-micro-service
 
 # From terraform output

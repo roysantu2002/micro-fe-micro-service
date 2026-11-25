@@ -20,7 +20,7 @@ permissions:
 
 env:
   GHCR_REGISTRY:   ghcr.io
-  IMAGE_PREFIX:    ghcr.io/santuroy/micro-fe-micro-service
+  IMAGE_PREFIX:    ghcr.io/roysantu2002/micro-fe-micro-service
   RESOURCE_GROUP:  rg-yt-planner
 
 jobs:

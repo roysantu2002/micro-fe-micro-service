@@ -50,5 +50,5 @@ locals {
 
   # Images live in GitHub Container Registry (free, no Azure registry needed)
   # Packages must be set to Public after first push — then no credentials needed
-  ghcr_image_prefix = "ghcr.io/santuroy/micro-fe-micro-service"
+  ghcr_image_prefix = "ghcr.io/roysantu2002/micro-fe-micro-service"
 }
