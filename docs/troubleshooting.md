@@ -304,21 +304,25 @@ import('./bootstrap');
 
 `frontend/host-app/src/bootstrap.tsx` (actual app render)
 ```tsx
-import { StrictMode } from 'react';
-import ReactDOM from 'react-dom/client';
-import { PublicClientApplication } from '@azure/msal-browser';
-import { MsalProvider } from '@azure/msal-react';
-import { msalConfig } from './auth/msalConfig';
-import App from './App';
+// Skip-auth and mock modes render <App> without MsalProvider.
+// Real Azure AD mode dynamically imports MSAL and wraps the tree.
+const skipAuth = process.env.PUBLIC_DEV_SKIP_AUTH === 'true';
+const isMock   = process.env.PUBLIC_MOCK_AUTH === 'true';
 
-const msalInstance = new PublicClientApplication(msalConfig);
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <MsalProvider instance={msalInstance}>
-      <App />
-    </MsalProvider>
-  </StrictMode>
-);
+if (skipAuth || isMock) {
+  ReactDOM.createRoot(rootEl).render(<StrictMode><App /></StrictMode>);
+} else {
+  Promise.all([
+    import('@azure/msal-browser'),
+    import('@azure/msal-react'),
+    import('./auth/msalConfig'),
+  ]).then(([{ PublicClientApplication }, { MsalProvider }, { msalConfig }]) => {
+    const msalInstance = new PublicClientApplication(msalConfig);
+    ReactDOM.createRoot(rootEl).render(
+      <StrictMode><MsalProvider instance={msalInstance}><App /></MsalProvider></StrictMode>
+    );
+  });
+}
 ```
 
 ---
@@ -394,10 +398,10 @@ docker compose -f docker-compose.local.yml up --build
 PUBLIC_DEV_SKIP_AUTH=false
 PUBLIC_MOCK_AUTH=true
 
-docker compose -f docker-compose.local.yml --profile mock up --build
-# → http://localhost:3000  redirects to mock login at localhost:8787
-# Enter any sub/username — it auto-signs you in
-# Mock server debugger UI: http://localhost:8787/default/debugger
+docker compose -f docker-compose.local.yml up --build
+# → http://localhost:3000  shows an in-app mock login form
+# Type any name, press Enter — app loads as that user
+# No external server, no redirect, no HTTPS needed
 ```
 
 ### Mode 3 — Real Azure AD login
@@ -415,7 +419,6 @@ docker compose -f docker-compose.local.yml up --build
 | Resource | URL |
 |---|---|
 | Local app | `http://localhost:3000` |
-| Mock OIDC server | `http://localhost:8787/default/debugger` |
 | Production app | `https://host-app.mangosea-5338e7ad.eastus.azurecontainerapps.io` |
 | App Registration | Azure Portal → Entra ID → App registrations → `d53a7e1b-47d9-477d-ba37-f9f0c9ea7be9` |
 | GHCR packages | `github.com/roysantu2002 → Packages` |
