@@ -1,11 +1,24 @@
-# Environment
+# Environment — never commit real secrets
 .env
+.env.local
+.env.*.local
+frontend/**/.env.local
 
 # Node
 node_modules/
 .next/
 out/
 dist/
+
+# rsbuild cache
+.rsbuild/
+
+# Terraform — never commit state or real tfvars
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/.terraform.lock.hcl
+infra/terraform/terraform.tfvars
 
 # Java / Maven
 target/
