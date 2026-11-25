@@ -14,14 +14,6 @@ resource "azurerm_container_app_environment" "cae" {
   location                   = azurerm_resource_group.rg.location
   resource_group_name        = azurerm_resource_group.rg.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.logs.id
-  infrastructure_subnet_id   = azurerm_subnet.container_apps.id
-
-  workload_profile {
-    name                  = "Consumption"
-    workload_profile_type = "Consumption"
-    minimum_count         = 0
-    maximum_count         = 10
-  }
 
   tags = local.common_tags
 }
@@ -56,23 +48,23 @@ resource "azurerm_container_app" "topic_manager_mfe" {
 
     container {
       name   = "topic-manager-mfe"
-      image  = "${local.ghcr_image_prefix}/topic-manager-mfe:latest"
+      image  = "nginx:1.27-alpine"
       cpu    = 0.25
       memory = "0.5Gi"
 
       liveness_probe {
-        path           = "/health"
-        port           = 80
-        transport      = "HTTP"
-        initial_delay  = 10
-        period_seconds = 30
+        path             = "/health"
+        port             = 80
+        transport        = "HTTP"
+        initial_delay    = 10
+        interval_seconds = 30
       }
 
       readiness_probe {
-        path           = "/health"
-        port           = 80
-        transport      = "HTTP"
-        period_seconds = 10
+        path             = "/health"
+        port             = 80
+        transport        = "HTTP"
+        interval_seconds = 10
       }
     }
   }
@@ -112,23 +104,23 @@ resource "azurerm_container_app" "content_writer_mfe" {
 
     container {
       name   = "content-writer-mfe"
-      image  = "${local.ghcr_image_prefix}/content-writer-mfe:latest"
+      image  = "nginx:1.27-alpine"
       cpu    = 0.25
       memory = "0.5Gi"
 
       liveness_probe {
-        path           = "/health"
-        port           = 80
-        transport      = "HTTP"
-        initial_delay  = 10
-        period_seconds = 30
+        path             = "/health"
+        port             = 80
+        transport        = "HTTP"
+        initial_delay    = 10
+        interval_seconds = 30
       }
 
       readiness_probe {
-        path           = "/health"
-        port           = 80
-        transport      = "HTTP"
-        period_seconds = 10
+        path             = "/health"
+        port             = 80
+        transport        = "HTTP"
+        interval_seconds = 10
       }
     }
   }
@@ -168,7 +160,7 @@ resource "azurerm_container_app" "host_app" {
 
     container {
       name   = "host-app"
-      image  = "${local.ghcr_image_prefix}/host-app:latest"
+      image  = "nginx:1.27-alpine"
       cpu    = 0.5
       memory = "1Gi"
 
@@ -183,18 +175,18 @@ resource "azurerm_container_app" "host_app" {
       }
 
       liveness_probe {
-        path           = "/health"
-        port           = 80
-        transport      = "HTTP"
-        initial_delay  = 10
-        period_seconds = 30
+        path             = "/health"
+        port             = 80
+        transport        = "HTTP"
+        initial_delay    = 10
+        interval_seconds = 30
       }
 
       readiness_probe {
-        path           = "/health"
-        port           = 80
-        transport      = "HTTP"
-        period_seconds = 10
+        path             = "/health"
+        port             = 80
+        transport        = "HTTP"
+        interval_seconds = 10
       }
     }
   }
