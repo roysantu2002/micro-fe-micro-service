@@ -1,0 +1,14 @@
+{
+  "name": "mfe-sample-complete",
+  "private": true,
+  "scripts": {
+    "install:all": "npm i --prefix frontend/host-app && npm i --prefix frontend/items-mfe",
+    "dev:host": "npm run dev --prefix frontend/host-app",
+    "dev:mfe": "npm run dev --prefix frontend/items-mfe",
+    "dev:backend": "cd backend/items-service && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local",
+    "dev": "concurrently \"npm run dev:mfe\" \"npm run dev:host\" \"npm run dev:backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
